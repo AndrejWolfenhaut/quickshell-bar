@@ -1,6 +1,13 @@
 {
-  "editor.defaultFormatter": "theqtcompany.qt-qml",
-  "[cpp]": {
-    "editor.defaultFormatter": "llvm-vs-code-extensions.vscode-clangd"
-  }
+  "terminal.integrated.defaultProfile.linux": "nixDevShell",
+  "terminal.integrated.profiles.linux": {
+    "nixDevShell": {
+      "path": "nix",
+      "args": [
+        "develop"
+      ],
+      "icon": "terminal-bash"
+    }
+  },
+  "qt-qml.qmlls.customExePath": "/nix/store/d9dzphchl6mqq5hkdb828gqgbx8j078n-qmlls-6.12.0/bin/qmlls"
 }

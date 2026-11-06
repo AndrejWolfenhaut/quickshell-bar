@@ -1,156 +1,127 @@
+#################
+#
+# quickshell-bar - A simple desktop bar built with Quickshell that I'm developing mostly for myself :)
+# Copyright (C) 2026 The caelestia-shell contributors (see caelestia-shell-contributors.txt), Andrej Wolfenhaut <andrejwolfenhaut@gmail.com>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
+# Some code is reused from the caelestia-shell project (https://github.com/caelestia-dots/shell).
+# In the following section of every source file, the relevant reused code and/or ideas is/are described.
+# Otherwise, this comment ends here.
+#
+# - From nix/default.nix
+#   - Structure of Nix derivation for Quickshell application with C++ plugin
+#
+#################
+
 {
-  rev,
   lib,
   stdenv,
   makeWrapper,
-  makeFontsConf,
-  fish,
-  ddcutil,
-  brightnessctl,
-  networkmanager,
-  lm_sensors,
-  swappy,
-  wl-clipboard,
-  libqalculate,
   bash,
-  hyprland,
-  material-symbols,
-  rubik,
-  nerd-fonts,
-  qt6,
-  quickshell,
-  aubio,
-  libcava,
-  fftw,
-  pipewire,
-  xkeyboard-config,
   cmake,
   ninja,
-  pkg-config,
-  caelestia-cli,
-  m3shapes,
+  qt6,
+  quickshell-with-modules,
   debug ? false,
-  withCli ? false,
-  extraRuntimeDeps ? [],
-}: let
-  version = "1.0.0";
+  extraRuntimeDependencies ? [ ],
+  ...
+}:
+let
+  version = "0.0.1";
 
-  qs = quickshell.withModules [qt6.qtimageformats qt6.qtmultimedia m3shapes];
+  cmakeBuildType = if debug then "Debug" else "RelWithDebInfo";
 
-  runtimeDeps =
-    [
-      fish
-      ddcutil
-      brightnessctl
-      networkmanager
-      lm_sensors
-      swappy
-      wl-clipboard
-      libqalculate
-      bash
-      hyprland
-    ]
-    ++ extraRuntimeDeps
-    ++ lib.optional withCli caelestia-cli;
+  quickshell-bar-plugin = stdenv.mkDerivation {
+    pname = "quickshell-bar-plugin${lib.optionalString debug "-debug"}";
+    inherit version;
 
-  fontconfig = makeFontsConf {
-    fontDirectories = [material-symbols rubik nerd-fonts.caskaydia-cove];
-  };
-
-  cmakeBuildType =
-    if debug
-    then "Debug"
-    else "RelWithDebInfo";
-
-  cmakeVersionFlags = [
-    (lib.cmakeFeature "VERSION" version)
-    (lib.cmakeFeature "GIT_REVISION" rev)
-    (lib.cmakeFeature "DISTRIBUTOR" "nix-flake")
-  ];
-
-  extras = stdenv.mkDerivation {
-    inherit cmakeBuildType;
-    name = "caelestia-extras${lib.optionalString debug "-debug"}";
     src = lib.fileset.toSource {
       root = ./..;
-      fileset = lib.fileset.union ./../CMakeLists.txt ./../extras;
+      fileset = lib.fileset.intersection (lib.fileset.fromSource (lib.sources.cleanSource ./..)) (
+        lib.fileset.unions [
+          ../CMakeLists.txt
+          ../src/CMakeLists.txt
+          ../src/plugin
+        ]
+      );
     };
 
-    nativeBuildInputs = [cmake ninja];
-
-    cmakeFlags =
-      [
-        (lib.cmakeFeature "ENABLE_MODULES" "extras")
-        (lib.cmakeFeature "INSTALL_LIBDIR" "${placeholder "out"}/lib")
-      ]
-      ++ cmakeVersionFlags;
-  };
-
-  plugin = stdenv.mkDerivation {
-    inherit cmakeBuildType;
-    name = "caelestia-qml-plugin${lib.optionalString debug "-debug"}";
-    src = lib.fileset.toSource {
-      root = ./..;
-      fileset = lib.fileset.union ./../CMakeLists.txt ./../plugin;
-    };
-
-    nativeBuildInputs = [cmake ninja pkg-config];
-    buildInputs = [qt6.qtbase qt6.qtdeclarative qt6.qtmultimedia qt6.qtshadertools libqalculate pipewire aubio libcava fftw lm_sensors];
+    nativeBuildInputs = [
+      cmake
+      ninja
+    ];
+    buildInputs = [
+      qt6.qtbase
+      qt6.qtdeclarative
+    ];
 
     dontWrapQtApps = true;
-    cmakeFlags =
-      [
-        (lib.cmakeFeature "ENABLE_MODULES" "plugin")
-        (lib.cmakeFeature "INSTALL_QMLDIR" qt6.qtbase.qtQmlPrefix)
-      ]
-      ++ cmakeVersionFlags;
+
+    inherit cmakeBuildType;
+    cmakeFlags = [
+      (lib.cmakeFeature "ENABLE_MODULE" "plugin")
+      (lib.cmakeFeature "INSTALL_QMLDIR" qt6.qtbase.qtQmlPrefix)
+    ];
   };
+
+  runtimeDependencies = [ bash ] ++ extraRuntimeDependencies;
 in
-  stdenv.mkDerivation {
-    inherit version cmakeBuildType;
-    pname = "caelestia-shell${lib.optionalString debug "-debug"}";
-    src = ./..;
+stdenv.mkDerivation {
+  pname = "quickshell-bar${lib.optionalString debug "-debug"}";
+  inherit version;
 
-    nativeBuildInputs = [cmake ninja makeWrapper qt6.wrapQtAppsHook];
-    buildInputs = [qs extras plugin xkeyboard-config qt6.qtbase];
-    propagatedBuildInputs = runtimeDeps;
-
-    cmakeFlags =
-      [
-        (lib.cmakeFeature "ENABLE_MODULES" "shell")
-        (lib.cmakeFeature "INSTALL_QSCONFDIR" "${placeholder "out"}/share/caelestia-shell")
+  src = lib.fileset.toSource {
+    root = ./..;
+    fileset = lib.fileset.intersection (lib.fileset.fromSource (lib.sources.cleanSource ./..)) (
+      lib.fileset.unions [
+        ../CMakeLists.txt
+        ../src/CMakeLists.txt
+        ../src/shell
       ]
-      ++ cmakeVersionFlags;
+    );
+  };
 
-    dontStrip = debug;
+  nativeBuildInputs = [
+    cmake
+    ninja
+    makeWrapper
+    qt6.wrapQtAppsHook
+  ];
+  buildInputs = [
+    quickshell-with-modules
+    quickshell-bar-plugin
+    qt6.qtbase
+  ];
+  propagatedBuildInputs = runtimeDependencies;
 
-    prePatch = ''
-      substituteInPlace assets/pam.d/fprint \
-        --replace-fail pam_fprintd.so /run/current-system/sw/lib/security/pam_fprintd.so
-      substituteInPlace assets/pam.d/howdy \
-        --replace-fail pam_howdy.so /run/current-system/sw/lib/security/pam_howdy.so
-    '';
+  inherit cmakeBuildType;
+  cmakeFlags = [
+    (lib.cmakeFeature "ENABLE_MODULE" "shell")
+    (lib.cmakeFeature "INSTALL_QSCONFDIR" "${placeholder "out"}/share/quickshell-bar")
+  ];
 
-    postInstall = ''
-      makeWrapper ${qs}/bin/qs $out/bin/caelestia-shell \
-        --prefix PATH : "${lib.makeBinPath runtimeDeps}" \
-        --set FONTCONFIG_FILE "${fontconfig}" \
-        --set CAELESTIA_LIB_DIR ${extras}/lib \
-        --set CAELESTIA_XKB_RULES_PATH ${xkeyboard-config}/share/xkeyboard-config-2/rules/base.lst \
-        --add-flags "-p $out/share/caelestia-shell"
+  dontStrip = debug;
 
-      mkdir -p $out/lib
-      ln -s ${extras}/lib/* $out/lib/
-    '';
+  postInstall = ''
+    mkdir -p "$out/bin"
+    makeWrapper "${quickshell-with-modules}/bin/qs" "$out/bin/quickshell-bar" \
+      --prefix PATH : "${lib.makeBinPath runtimeDependencies}" \
+      --add-flags "--path $out/share/quickshell-bar"
+  '';
 
-    passthru = {
-      inherit plugin extras;
-    };
-
-    meta = {
-      description = "A fluid, morphing shell for your Linux desktop";
-      homepage = "https://github.com/caelestia-dots/shell";
-      license = lib.licenses.gpl3Only;
-      mainProgram = "caelestia-shell";
-    };
-  }
+  passthru = {
+    plugin = quickshell-bar-plugin;
+  };
+}

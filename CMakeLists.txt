@@ -1,51 +1,46 @@
+#################
+#
+# quickshell-bar - A simple desktop bar built with Quickshell that I'm developing mostly for myself :)
+# Copyright (C) 2026 The caelestia-shell contributors (see caelestia-shell-contributors.txt), Andrej Wolfenhaut <andrejwolfenhaut@gmail.com>
+# 
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
+# Some code is reused from the caelestia-shell project (https://github.com/caelestia-dots/shell).
+# In the following section of every source file, the relevant reused code and/or ideas is/are described.
+# Otherwise, this comment ends here.
+#
+# - From CMakeLists.txt
+#   - General CMake configuration
+#   - Compiler options
+#
+#################
+
+#
+# General configuration
+#
+
 cmake_minimum_required(VERSION 3.19)
-
-if(NOT DEFINED VERSION)
-    execute_process(COMMAND git describe --tags --abbrev=0
-        WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
-        OUTPUT_VARIABLE VERSION
-        OUTPUT_STRIP_TRAILING_WHITESPACE
-    )
-
-    if("${VERSION}" STREQUAL "")
-        message(FATAL_ERROR "VERSION is not set and failed to get from git")
-    endif()
-endif()
-
-if(NOT DEFINED GIT_REVISION)
-    execute_process(COMMAND git rev-parse HEAD
-        WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
-        OUTPUT_VARIABLE GIT_REVISION
-        OUTPUT_STRIP_TRAILING_WHITESPACE
-    )
-
-    if("${GIT_REVISION}" STREQUAL "")
-        message(FATAL_ERROR "GIT_REVISION is not set and failed to get from git")
-    endif()
-endif()
-
-string(REGEX REPLACE "^v" "" VERSION "${VERSION}")
-
-project(caelestia-shell VERSION ${VERSION} LANGUAGES CXX)
+project(quickshell-bar LANGUAGES CXX)
 
 include(GNUInstallDirs)
 
+#
+# Compiler configuration
+#
+
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF)
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
-
-set(DISTRIBUTOR "Unset" CACHE STRING "Distributor")
-set(ENABLE_MODULES "extras;plugin;shell" CACHE STRING "Modules to build/install")
-set(INSTALL_LIBDIR "${CMAKE_INSTALL_LIBDIR}/caelestia" CACHE STRING "Library install dir")
-set(INSTALL_QMLDIR "${CMAKE_INSTALL_LIBDIR}/qt6/qml" CACHE STRING "QML install dir")
-set(INSTALL_QSCONFDIR "${CMAKE_INSTALL_SYSCONFDIR}/xdg/quickshell/caelestia" CACHE STRING "Quickshell config install dir")
-
-add_compile_definitions(
-    QT_NO_CAST_FROM_ASCII
-    QT_NO_CAST_TO_ASCII
-    QT_NO_CAST_FROM_BYTEARRAY
-)
 
 add_compile_options(
     -Wall -Wextra -Wpedantic -Wshadow -Wconversion
@@ -59,25 +54,8 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     add_compile_options(-Wunused-lambda-capture -Wno-nonportable-include-path)
 endif()
 
-if("extras" IN_LIST ENABLE_MODULES)
-    add_subdirectory(extras)
-endif()
+#
+# The actual build and install
+#
 
-if("plugin" IN_LIST ENABLE_MODULES)
-    add_subdirectory(plugin)
-endif()
-
-if("shell" IN_LIST ENABLE_MODULES)
-    foreach(dir assets components daemons modules services utils)
-        install(DIRECTORY ${dir} DESTINATION "${INSTALL_QSCONFDIR}")
-    endforeach()
-
-    install(PROGRAMS assets/wrap_term_launch.sh DESTINATION "${INSTALL_QSCONFDIR}/assets")
-
-    file(READ shell.qml SHELL_QML)
-    string(REPLACE "settings.watchFiles: true" "settings.watchFiles: false" SHELL_QML "${SHELL_QML}")
-    file(WRITE "${CMAKE_BINARY_DIR}/qml/shell.qml" "${SHELL_QML}")
-    install(FILES "${CMAKE_BINARY_DIR}/qml/shell.qml" DESTINATION "${INSTALL_QSCONFDIR}")
-
-    install(FILES LICENSE DESTINATION "${INSTALL_QSCONFDIR}")
-endif()
+add_subdirectory(src)
