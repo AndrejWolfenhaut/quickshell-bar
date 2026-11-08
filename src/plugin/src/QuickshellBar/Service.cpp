@@ -20,28 +20,28 @@
 * In the following section of every source file, the relevant reused code and/or ideas is/are described.
 * Otherwise, this comment ends here.
 *
+* - From plugin/src/Caelestia/service.cpp
+*   - Code for abstract reference-counting service
+*
 ****************/
 
-#include <qobject.h>
-#include <qqmlintegration.h>
+#include "Service.hpp"
 
 
 
-class Simple : public QObject {
-    Q_OBJECT
-    Q_PROPERTY(int something READ something WRITE setSomething NOTIFY somethingChanged)
-    QML_ELEMENT
+Service::Service(QObject *parent) : QObject(parent) {}
 
-public:
-    explicit Simple();
+void Service::addConsumer(QObject *consumer) {
+    if (m_consumers.isEmpty()) {
+        start();
+    }
 
-    [[nodiscard]] int something() const;
+    QObject::connect(consumer, &QObject::destroyed, this, &Service::removeConsumer);
+    m_consumers << consumer;
+}
 
-    void setSomething(int something);
-
-signals:
-    void somethingChanged();
-
-private:
-    int m_something;
-};
+void Service::removeConsumer(QObject *consumer) {
+    if (m_consumers.remove(consumer) && m_consumers.isEmpty()) {
+        stop();
+    }
+}

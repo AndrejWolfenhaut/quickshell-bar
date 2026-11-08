@@ -25,5 +25,8 @@
 qml_module(quickshell-bar-core
     URI QuickshellBar
     INCLUDE_PREFIX core
-    SOURCES Simple.cpp
+    SOURCES
+        Service.cpp
+        ServiceRef.cpp
+        TickingService.cpp
 )

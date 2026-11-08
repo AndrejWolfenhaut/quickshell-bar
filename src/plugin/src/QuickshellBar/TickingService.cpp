@@ -20,18 +20,52 @@
 * In the following section of every source file, the relevant reused code and/or ideas is/are described.
 * Otherwise, this comment ends here.
 *
+* - From plugin/src/Caelestia/tickingservice.cpp
+*   - Code for abstract ticking service
+*
 ****************/
 
-#include "Simple.hpp"
+#include "TickingService.hpp"
 
 
 
-Simple::Simple() : m_something(0) {}
-
-int Simple::something() const {
-    return this->m_something;
+TickingService::TickingService(QObject *parent, int intervalMilliseconds) :
+Service(parent),
+m_timer(new QTimer(this)),
+m_intervalMilliseconds(intervalMilliseconds),
+m_isRunning(false) {
+    m_timer->setSingleShot(false);
+    QObject::connect(m_timer, &QTimer::timeout, this, [this] { tick(); });
 }
 
-void Simple::setSomething(int something) {
-    this->m_something = something;
+int TickingService::intervalMilliseconds() const {
+    return m_intervalMilliseconds;
+}
+
+void TickingService::setIntervalMilliseconds(int intervalMilliseconds) {
+    if (intervalMilliseconds <= 0 || intervalMilliseconds == m_intervalMilliseconds) {
+        return;
+    }
+
+    m_intervalMilliseconds = intervalMilliseconds;
+    if (m_isRunning) {
+        m_timer->start(m_intervalMilliseconds);
+    }
+
+    emit intervalMillisecondsChanged();
+}
+
+void TickingService::start() {
+    m_isRunning = true;
+
+    if (m_intervalMilliseconds > 0) {
+        m_timer->start(m_intervalMilliseconds);
+    }
+
+    tick();
+}
+
+void TickingService::stop() {
+    m_isRunning = false;
+    m_timer->stop();
 }
