@@ -20,38 +20,39 @@
 * In the following section of every source file, the relevant reused code and/or ideas is/are described.
 * Otherwise, this comment ends here.
 *
-* - From plugin/src/Caelestia/serviceref.cpp
+* - From plugin/src/Caelestia/Services/serviceref.cpp
 *   - Code for service reference
 *
 ****************/
 
-#include "ServiceRef.hpp"
+#include "ServiceReference.hpp"
 
 
 
-ServiceRef::ServiceRef(Service *service, QObject *parent) : QObject(parent), m_service(service) {
+ServiceReference::ServiceReference(Service *service, QObject *parent) : QObject(parent),
+m_service(service) {
     if (m_service != nullptr) {
-        m_service->addConsumer(this);
+        m_service->addServiceReference(this);
     }
 }
 
-Service *ServiceRef::service() const {
+Service *ServiceReference::service() const {
     return m_service;
 }
 
-void ServiceRef::setService(Service *service) {
+void ServiceReference::setService(Service *service) {
     if (m_service == service) {
         return;
     }
 
     if (m_service != nullptr) {
-        m_service->removeConsumer(this);
+        m_service->removeServiceReference(this);
     }
 
     m_service = service;
     emit serviceChanged();
 
     if (m_service) {
-        m_service->addConsumer(this);
+        m_service->addServiceReference(this);
     }
 }

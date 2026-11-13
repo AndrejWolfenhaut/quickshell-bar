@@ -39,8 +39,6 @@ PanelWindow {
 
   implicitHeight: Math.max(...[barExternalSpacerLeft, moduleGroupLeft, moduleGroupRight, barExternalSpacerLeft].map((child) => child.implicitHeight))
 
-  readonly property real test: SystemStats.cpuUsedPercent
-
   Rectangle {
     id: barExternalSpacerLeft
 

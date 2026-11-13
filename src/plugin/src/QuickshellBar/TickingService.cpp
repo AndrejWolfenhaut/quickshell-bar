@@ -20,17 +20,18 @@
 * In the following section of every source file, the relevant reused code and/or ideas is/are described.
 * Otherwise, this comment ends here.
 *
-* - From plugin/src/Caelestia/tickingservice.cpp
+* - From plugin/src/Caelestia/Services/tickingservice.cpp
 *   - Code for abstract ticking service
 *
 ****************/
+
+#include <chrono>
 
 #include "TickingService.hpp"
 
 
 
-TickingService::TickingService(QObject *parent, int intervalMilliseconds) :
-Service(parent),
+TickingService::TickingService(QObject *parent, qint32 intervalMilliseconds) : Service(parent),
 m_timer(new QTimer(this)),
 m_intervalMilliseconds(intervalMilliseconds),
 m_isRunning(false) {
@@ -38,11 +39,11 @@ m_isRunning(false) {
     QObject::connect(m_timer, &QTimer::timeout, this, [this] { tick(); });
 }
 
-int TickingService::intervalMilliseconds() const {
+qint32 TickingService::intervalMilliseconds() const {
     return m_intervalMilliseconds;
 }
 
-void TickingService::setIntervalMilliseconds(int intervalMilliseconds) {
+void TickingService::setIntervalMilliseconds(qint32 intervalMilliseconds) {
     if (intervalMilliseconds <= 0 || intervalMilliseconds == m_intervalMilliseconds) {
         return;
     }

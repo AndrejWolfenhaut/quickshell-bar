@@ -20,13 +20,13 @@
 * In the following section of every source file, the relevant reused code and/or ideas is/are described.
 * Otherwise, this comment ends here.
 *
-* - From plugin/src/Caelestia/serviceref.hpp
+* - From plugin/src/Caelestia/Services/serviceref.hpp
 *   - Code for service reference
 *
 ****************/
 
-#ifndef SERVICE_REF_HPP
-#define SERVICE_REF_HPP
+#ifndef QUICKSHELL_BAR_SERVICE_REFERENCE_HPP
+#define QUICKSHELL_BAR_SERVICE_REFERENCE_HPP
 
 #include <QPointer>
 #include <qqmlintegration.h>
@@ -35,14 +35,14 @@
 
 
 
-class ServiceRef : public QObject {
+class ServiceReference : public QObject {
     Q_OBJECT
     QML_ELEMENT
 
     Q_PROPERTY(Service *service READ service WRITE setService NOTIFY serviceChanged)
 
 public:
-    explicit ServiceRef(Service *service = nullptr, QObject *parent = nullptr);
+    explicit ServiceReference(Service *service = nullptr, QObject *parent = nullptr);
 
     [[nodiscard]] Service *service() const;
     void setService(Service *service);

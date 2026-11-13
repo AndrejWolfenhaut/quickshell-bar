@@ -27,6 +27,8 @@ qml_module(quickshell-bar-core
     INCLUDE_PREFIX core
     SOURCES
         Service.cpp
-        ServiceRef.cpp
+        ServiceReference.cpp
         TickingService.cpp
+        ProcessorService.cpp
+        ProcessorState.cpp
 )

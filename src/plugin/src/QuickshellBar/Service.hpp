@@ -20,13 +20,13 @@
 * In the following section of every source file, the relevant reused code and/or ideas is/are described.
 * Otherwise, this comment ends here.
 *
-* - From plugin/src/Caelestia/service.hpp
+* - From plugin/src/Caelestia/Services/service.hpp
 *   - Code for abstract reference-counting service
 *
 ****************/
 
-#ifndef SERVICE_HPP
-#define SERVICE_HPP
+#ifndef QUICKSHELL_BAR_SERVICE_HPP
+#define QUICKSHELL_BAR_SERVICE_HPP
 
 #include <QObject>
 #include <QSet>
@@ -39,11 +39,11 @@ class Service : public QObject {
 public:
     explicit Service(QObject *parent = nullptr);
 
-    void addConsumer(QObject *consumer);
-    void removeConsumer(QObject *consumer);
+    void addServiceReference(QObject *serviceReference);
+    void removeServiceReference(QObject *serviceReference);
 
 private:
-    QSet<QObject *> m_consumers;
+    QSet<QObject *> m_serviceReferences;
 
     virtual void start() = 0;
     virtual void stop() = 0;

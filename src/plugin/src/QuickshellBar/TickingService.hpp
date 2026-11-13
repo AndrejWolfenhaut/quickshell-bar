@@ -20,13 +20,13 @@
 * In the following section of every source file, the relevant reused code and/or ideas is/are described.
 * Otherwise, this comment ends here.
 *
-* - From plugin/src/Caelestia/tickingservice.hpp
+* - From plugin/src/Caelestia/Services/tickingservice.hpp
 *   - Code for abstract ticking service
 *
 ****************/
 
-#ifndef TICKING_SERVICE_HPP
-#define TICKING_SERVICE_HPP
+#ifndef QUICKSHELL_BAR_TICKING_SERVICE_HPP
+#define QUICKSHELL_BAR_TICKING_SERVICE_HPP
 
 #include <QTimer>
 
@@ -37,13 +37,13 @@
 class TickingService : public Service {
     Q_OBJECT
 
-    Q_PROPERTY(int intervalMilliseconds READ intervalMilliseconds WRITE setIntervalMilliseconds NOTIFY intervalMillisecondsChanged)
+    Q_PROPERTY(qint32 intervalMilliseconds READ intervalMilliseconds WRITE setIntervalMilliseconds NOTIFY intervalMillisecondsChanged)
 
 public:
-    explicit TickingService(QObject *parent = nullptr, int intervalMilliseconds = 1000);
+    explicit TickingService(QObject *parent = nullptr, qint32 intervalMilliseconds = 1000);
 
-    [[nodiscard]] int intervalMilliseconds() const;
-    void setIntervalMilliseconds(int intervalMilliseconds);
+    [[nodiscard]] qint32 intervalMilliseconds() const;
+    void setIntervalMilliseconds(qint32 intervalMilliseconds);
 
 signals:
     void intervalMillisecondsChanged();
@@ -52,14 +52,14 @@ protected:
     virtual void tick() = 0;
 
 private:
-    void start() override final;
-    void stop() override final;
-
     QTimer *m_timer;
 
-    int m_intervalMilliseconds;
+    qint32 m_intervalMilliseconds;
 
     bool m_isRunning;
+    
+    void start() override final;
+    void stop() override final;
 };
 
 #endif

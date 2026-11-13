@@ -20,7 +20,7 @@
 * In the following section of every source file, the relevant reused code and/or ideas is/are described.
 * Otherwise, this comment ends here.
 *
-* - From plugin/src/Caelestia/service.cpp
+* - From plugin/src/Caelestia/Services/service.cpp
 *   - Code for abstract reference-counting service
 *
 ****************/
@@ -31,17 +31,17 @@
 
 Service::Service(QObject *parent) : QObject(parent) {}
 
-void Service::addConsumer(QObject *consumer) {
-    if (m_consumers.isEmpty()) {
+void Service::addServiceReference(QObject *serviceReference) {
+    if (m_serviceReferences.isEmpty()) {
         start();
     }
 
-    QObject::connect(consumer, &QObject::destroyed, this, &Service::removeConsumer);
-    m_consumers << consumer;
+    QObject::connect(serviceReference, &QObject::destroyed, this, &Service::removeServiceReference);
+    m_serviceReferences << serviceReference;
 }
 
-void Service::removeConsumer(QObject *consumer) {
-    if (m_consumers.remove(consumer) && m_consumers.isEmpty()) {
+void Service::removeServiceReference(QObject *serviceReference) {
+    if (m_serviceReferences.remove(serviceReference) && m_serviceReferences.isEmpty()) {
         stop();
     }
 }
