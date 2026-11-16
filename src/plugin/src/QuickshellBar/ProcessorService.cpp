@@ -39,32 +39,32 @@ using namespace Qt::StringLiterals;
 
 
 
-const QString ProcessorService::sm_unknownModelName = u"Unknown"_s;
+const QString ProcessorService::sm_cpuUnknownModelName = u"Unknown"_s;
 
 ProcessorService::ProcessorService(QObject *parent) : TickingService(parent),
-m_isModelNameSourced(false),
+m_isCPUModelNameSourced(false),
 m_isPossibleCoresSourced(false),
 m_lastPossibleCoreIndex(0),
-m_modelName(sm_unknownModelName),
-m_stateTotal(new ProcessorState(u"CPU"_s, this)),
-m_temperatureCelsius(0.0) {
-    sourceModelName();
+m_cpuModelName(sm_cpuUnknownModelName),
+m_cpuTemperatureCelsius(0.0),
+m_cpuState(new ProcessorState(u"CPU"_s, this)) {
+    sourceCPUModelName();
     sourcePossibleCores();
 }
 
-QString ProcessorService::modelName() const {
-    return m_modelName;
+QString ProcessorService::cpuModelName() const {
+    return m_cpuModelName;
 }
 
-ProcessorState *ProcessorService::stateTotal() const {
-    return m_stateTotal.data();
+ProcessorState *ProcessorService::cpuState() const {
+    return m_cpuState.data();
 }
 
-QQmlListProperty<ProcessorState> ProcessorService::statesByPossibleCore() {
-    return { this, nullptr, &ProcessorService::statesByPossibleCoreCount, &ProcessorService::statesByPossibleCoreAt };
+QQmlListProperty<ProcessorState> ProcessorService::possibleCoreStatesByPossibleCoreIndex() {
+    return { this, nullptr, &ProcessorService::possibleCoreStatesByPossibleCoreIndexCount, &ProcessorService::possibleCoreStatesByPossibleCoreIndexAt };
 }
 
-qsizetype ProcessorService::statesByPossibleCoreCount(QQmlListProperty<ProcessorState> *property) {
+qsizetype ProcessorService::possibleCoreStatesByPossibleCoreIndexCount(QQmlListProperty<ProcessorState> *property) {
     ProcessorService *processorService = static_cast<ProcessorService *>(property->object);
     
     if (!processorService->m_isPossibleCoresSourced) {
@@ -74,84 +74,83 @@ qsizetype ProcessorService::statesByPossibleCoreCount(QQmlListProperty<Processor
     return processorService->m_lastPossibleCoreIndex + 1;
 }
 
-ProcessorState *ProcessorService::statesByPossibleCoreAt(QQmlListProperty<ProcessorState> *property, qsizetype index) {
+ProcessorState *ProcessorService::possibleCoreStatesByPossibleCoreIndexAt(QQmlListProperty<ProcessorState> *property, qsizetype index) {
     ProcessorService *processorService = static_cast<ProcessorService *>(property->object);
     
     if (!processorService->m_isPossibleCoresSourced || index < 0) {
         return nullptr;
     }
 
-    return processorService->m_statesByPossibleCore.contains(index)
-        ? processorService->m_statesByPossibleCore.value(index).data()
+    return processorService->m_possibleCoreStatesByPossibleCoreIndex.contains(index)
+        ? processorService->m_possibleCoreStatesByPossibleCoreIndex.value(index).data()
         : nullptr;
 }
 
-qreal ProcessorService::temperatureCelsius() const {
-    return m_temperatureCelsius;
+qreal ProcessorService::cpuTemperatureCelsius() const {
+    return m_cpuTemperatureCelsius;
 }
 
 void ProcessorService::tick() {
-    if (!m_isModelNameSourced) {
-        sourceModelName();
+    if (!m_isCPUModelNameSourced) {
+        sourceCPUModelName();
     }
 
     if (!m_isPossibleCoresSourced) {
         sourcePossibleCores();
     }
 
-    sourceUsage();
-    sourceTemperatureCelsius();
+    sourceProcessorStates();
+    sourceCPUTemperatureCelsius();
 }
 
-void ProcessorService::sourceModelName() {
-    QFile procCPUInfoFile(u"/proc/cpuinfo"_s);
-    if (!procCPUInfoFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+void ProcessorService::sourceCPUModelName() {
+    QFile originFile(u"/proc/cpuinfo"_s);
+    if (!originFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
         std::cerr << "[ProcessorService] Could not open /proc/cpuinfo! Proceeding with unknown model name..." << std::endl;
         return;
     }
-    const QByteArray procCPUInfoData = procCPUInfoFile.readAll();
-    procCPUInfoFile.close();
+    const QString originText = QString::fromLatin1(originFile.readAll());
+    originFile.close();
 
-    static const QRegularExpression modelNameRegex(u"model name[\\t ]*:[\\t ]*(.+)"_s);
-    const QRegularExpressionMatch modelNameRegexMatch = modelNameRegex.match(QString::fromLatin1(procCPUInfoData));
-    if (!modelNameRegexMatch.hasMatch()) {
+    static const QRegularExpression cpuModelNameRegex(u"model name[\\t ]*:[\\t ]*(.+)"_s);
+    const QRegularExpressionMatch cpuModelNameRegexMatch = cpuModelNameRegex.match(originText);
+    if (!cpuModelNameRegexMatch.hasMatch()) {
         std::cerr << "[ProcessorService] Model name field not found in /proc/cpuinfo! Proceeding with unknown model name..." << std::endl;
         return;
     }
 
-    QString modelName = modelNameRegexMatch.captured(1);
+    QString cpuModelName = cpuModelNameRegexMatch.captured(1);
 
-    static const QRegularExpression modelNameNoiseRegex(u"\\(R\\)|\\(TM\\)|CPU|\\d+(?:st|nd|rd|th) Gen |Core |Processor"_s, QRegularExpression::CaseInsensitiveOption);
-    static const QRegularExpression modelNameWhitespaceRegex(u"\\s+"_s);
-    modelName.replace(modelNameNoiseRegex, {});
-    modelName.replace(modelNameWhitespaceRegex, u" "_s);
-    modelName = modelName.trimmed();
+    static const QRegularExpression cpuModelNameNoiseRegex(u"\\(R\\)|\\(TM\\)|CPU|\\d+(?:st|nd|rd|th) Gen |Core |Processor"_s, QRegularExpression::CaseInsensitiveOption);
+    static const QRegularExpression cpuModelNameWhitespaceRegex(u"\\s+"_s);
+    cpuModelName.replace(cpuModelNameNoiseRegex, {});
+    cpuModelName.replace(cpuModelNameWhitespaceRegex, u" "_s);
+    cpuModelName = cpuModelName.trimmed();
 
-    m_isModelNameSourced = true;
-    if (m_modelName != modelName) {
-        m_modelName = modelName;
-        emit modelNameChanged();
+    m_isCPUModelNameSourced = true;
+    if (m_cpuModelName != cpuModelName) {
+        m_cpuModelName = cpuModelName;
+        emit cpuModelNameChanged();
     }
 }
 
 void ProcessorService::sourcePossibleCores() {
-    QFile possibleCoresFile(u"/sys/devices/system/cpu/possible"_s);
-    if (!possibleCoresFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+    QFile originFile(u"/sys/devices/system/cpu/possible"_s);
+    if (!originFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
         std::cerr << "[ProcessorService] Could  not open /sys/devices/system/cpu/possible! Disabling by-core usage..." << std::endl;
         return;
     }
-    const QByteArray possibleCoresData = possibleCoresFile.readAll();
-    possibleCoresFile.close();
+    const QString originText = QString::fromLatin1(originFile.readAll());
+    originFile.close();
 
-    const QString possibleCoresText = QString::fromLatin1(possibleCoresData);
     static const QRegularExpression possibleCoresRegex(u"^\\d+-\\d+(?:,\\d+-\\d+)*$"_s);
-    const QRegularExpressionMatch possibleCoresRegexMatch = possibleCoresRegex.match(possibleCoresText);
+    const QRegularExpressionMatch possibleCoresRegexMatch = possibleCoresRegex.match(originText);
     if (!possibleCoresRegexMatch.hasMatch()) {
         std::cerr << "[ProcessorService] /sys/devices/system/cpu/possible seems to be malformed! Disabling by-core usage..." << std::endl;
         return;
     }
 
-    const QStringList possibleCoresRanges = possibleCoresText.split(u","_s);
+    const QStringList possibleCoresRanges = originText.split(u","_s);
     qsizetype lastPossibleCoreIndex = 0;
     for (const QString &possibleCoresRange : std::as_const(possibleCoresRanges)) {
         const QStringList possibleCoresRangeParts = possibleCoresRange.split(u"-"_s);
@@ -173,7 +172,7 @@ void ProcessorService::sourcePossibleCores() {
         for (qsizetype possibleCoreIndex = possibleCoresRangeStart; possibleCoreIndex <= possibleCoresRangeStop; ++possibleCoreIndex) {
             QString possibleCoreName;
             QTextStream(&possibleCoreName) << u"Core "_s << possibleCoreIndex;
-            m_statesByPossibleCore[possibleCoreIndex] = new ProcessorState(possibleCoreName, this);
+            m_possibleCoreStatesByPossibleCoreIndex[possibleCoreIndex] = new ProcessorState(possibleCoreName, this);
             lastPossibleCoreIndex = std::max(lastPossibleCoreIndex, possibleCoreIndex);
         }
     }
@@ -181,99 +180,99 @@ void ProcessorService::sourcePossibleCores() {
     m_lastPossibleCoreIndex = lastPossibleCoreIndex;
 }
 
-void ProcessorService::sourceUsage() {
-    QFile procStatFile(u"/proc/stat"_s);
-    if (!procStatFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+void ProcessorService::sourceProcessorStates() {
+    QFile originFile(u"/proc/stat"_s);
+    if (!originFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
         std::cerr << "[ProcessorService] Could not open /proc/stat! Skipping usage update..." << std::endl;
         return;
     }
-    const QStringList procStatLines = QString::fromLatin1(procStatFile.readAll()).split(u"\n"_s);
-    procStatFile.close();
+    const QStringList originLines = QString::fromLatin1(originFile.readAll()).split(u"\n"_s);
+    originFile.close();
 
-    QSet<qsizetype> onlineCores;
-    ProcessorTimes timesTotal;
-    QHash<qsizetype, ProcessorTimes> timesByOnlineCore;
+    QSet<qsizetype> onlineCoreIndices;
+    ProcessorTimes cpuTimes;
+    QHash<qsizetype, ProcessorTimes> onlineCoreTimesByOnlineCoreIndex;
 
-    for (const QString &procStatLine : std::as_const(procStatLines)) {
-        if (!procStatLine.startsWith(u"cpu"_s)) {
+    for (const QString &originLine : std::as_const(originLines)) {
+        if (!originLine.startsWith(u"cpu"_s)) {
             continue;
         }
         
-        static const QRegularExpression procStatLineRegex(u"^cpu(\\d*)(?:[\\t ]+\\d+){4,10}$"_s);
-        const QRegularExpressionMatch procStatLineRegexMatch = procStatLineRegex.match(procStatLine);
-        if (!procStatLineRegexMatch.hasMatch()) {
+        static const QRegularExpression processorTimesRegex(u"^cpu(\\d*)(?:[\\t ]+\\d+){4,10}$"_s);
+        const QRegularExpressionMatch processorTimesRegexMatch = processorTimesRegex.match(originLine);
+        if (!processorTimesRegexMatch.hasMatch()) {
             std::cerr << "[ProcessorService] A line of /proc/stat starting with \"cpu\" seems to be malformed! Skipping usage update..." << std::endl;
             return;
         }
 
-        static const QRegularExpression procStatLineSplitRegex(u"[\\t ]+"_s);
-        const QStringList procStatLineColumns = procStatLine.split(procStatLineSplitRegex);
-        if (procStatLineColumns.size() < 5 || procStatLineColumns.size() > 11) {
+        static const QRegularExpression processorTimesSplitRegex(u"[\\t ]+"_s);
+        const QStringList originLineColumns = originLine.split(processorTimesSplitRegex);
+        if (originLineColumns.size() < 5 || originLineColumns.size() > 11) {
             std::cerr
                 << "[ProcessorService] A line of /proc/stat starting with \"cpu\" has an invalid number ("
-                << procStatLineColumns.size()
+                << originLineColumns.size()
                 << ") of columns! Skipping usage update..."
                 << std::endl;
             return;
         }
 
         // First column is at index 1, not 0!
-        ProcessorTimes times = {};
-        for (qsizetype procStatLineColumnIndex = 1; procStatLineColumnIndex < procStatLineColumns.size(); ++procStatLineColumnIndex) {
-            bool timeOK = false;
-            const quint64 time = procStatLineColumns[procStatLineColumnIndex].toULongLong(&timeOK);
-            if (!timeOK) {
+        ProcessorTimes processorTimes = {};
+        for (qsizetype originLineColumnIndex = 1; originLineColumnIndex < originLineColumns.size(); ++originLineColumnIndex) {
+            bool processorTimeOK = false;
+            const quint64 processorTime = originLineColumns[originLineColumnIndex].toULongLong(&processorTimeOK);
+            if (!processorTimeOK) {
                 std::cerr
                     << "[ProcessorService] A column ("
-                    << procStatLineColumns[procStatLineColumnIndex].toStdString()
+                    << originLineColumns[originLineColumnIndex].toStdString()
                     << ") of a line of /proc/stat starting with \"cpu\" can not be converted to an integer! Skipping usage update..."
                     << std::endl;
                 return;
             }
-            if (procStatLineColumnIndex == 4 || procStatLineColumnIndex == 5) {
-                times.m_idleTime += time;
+            if (originLineColumnIndex == 4 || originLineColumnIndex == 5) {
+                processorTimes.m_idleTime += processorTime;
             }
-            times.m_totalTime += time;
+            processorTimes.m_totalTime += processorTime;
         }
 
-        const QString coreIndexString = procStatLineRegexMatch.captured(1);
-        const bool isCoreIndexSpecified = !coreIndexString.isEmpty();
+        const QString onlineCoreIndexString = processorTimesRegexMatch.captured(1);
+        const bool isOnlineCoreIndexSpecified = !onlineCoreIndexString.isEmpty();
 
-        if (isCoreIndexSpecified) {
-            bool coreIndexOK = false;
-            const qsizetype coreIndex = coreIndexString.toLongLong(&coreIndexOK);
-            if (!coreIndexOK) {
+        if (isOnlineCoreIndexSpecified) {
+            bool onlineCoreIndexOK = false;
+            const qsizetype onlineCoreIndex = onlineCoreIndexString.toLongLong(&onlineCoreIndexOK);
+            if (!onlineCoreIndexOK) {
                 std::cerr
                     << "[ProcessorService] A core index ("
-                    << coreIndexString.toStdString()
+                    << onlineCoreIndexString.toStdString()
                     << ") in a line of /proc/stat starting with \"cpu<core index>\" can not be converted to an integer! Skipping usage update..."
                     << std::endl;
                 return;
             }
-            onlineCores << coreIndex;
-            timesByOnlineCore[coreIndex] = times;
+            onlineCoreIndices << onlineCoreIndex;
+            onlineCoreTimesByOnlineCoreIndex[onlineCoreIndex] = processorTimes;
         }
         else {
-            timesTotal = times;
+            cpuTimes = processorTimes;
         }
     }
 
-    m_stateTotal->updateOnline(timesTotal);
-    emit stateTotalChanged();
+    m_cpuState->updateOnline(cpuTimes);
+    emit cpuStateChanged();
 
     if (m_isPossibleCoresSourced) {
-        for (const auto &[possibleCoreIndex, possibleCoreState] : std::as_const(m_statesByPossibleCore).asKeyValueRange()) {
-            if (onlineCores.contains(possibleCoreIndex)) {
-                possibleCoreState->updateOnline(timesByOnlineCore[possibleCoreIndex]);
+        for (const auto &[possibleCoreIndex, possibleCoreState] : std::as_const(m_possibleCoreStatesByPossibleCoreIndex).asKeyValueRange()) {
+            if (onlineCoreIndices.contains(possibleCoreIndex)) {
+                possibleCoreState->updateOnline(onlineCoreTimesByOnlineCoreIndex[possibleCoreIndex]);
             }
             else {
                 possibleCoreState->updateOffline();
             }
         }
-        emit statesByPossibleCoreChanged();
+        emit possibleCoreStatesByPossibleCoreIndexChanged();
     }
 }
 
-void ProcessorService::sourceTemperatureCelsius() {
+void ProcessorService::sourceCPUTemperatureCelsius() {
 
 }

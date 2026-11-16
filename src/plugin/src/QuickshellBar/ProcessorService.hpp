@@ -38,56 +38,56 @@
 
 /*
 * Nomenclature:
-* - CPU: The whole CPU, all cores in total
-* - Core: One CPU core, as is available to the Kernel
-* - Processor: Both of the above
+* - CPU: The whole CPU, all cores in total, also the physical chip
+* - Core: One logical CPU core, as is available to the Kernel
+* - Processor: Refers to both of the above
 */
 class ProcessorService : public TickingService {
     Q_OBJECT
     QML_ELEMENT
     QML_SINGLETON
 
-    Q_PROPERTY(QString modelName READ modelName NOTIFY modelNameChanged)
-    Q_PROPERTY(ProcessorState *stateTotal READ stateTotal NOTIFY stateTotalChanged)
-    Q_PROPERTY(QQmlListProperty<ProcessorState> statesByPossibleCore READ statesByPossibleCore NOTIFY statesByPossibleCoreChanged)
-    Q_PROPERTY(qreal temperatureCelsius READ temperatureCelsius NOTIFY temperatureCelsiusChanged)
+    Q_PROPERTY(QString cpuModelName READ cpuModelName NOTIFY cpuModelNameChanged)
+    Q_PROPERTY(qreal cpuTemperatureCelsius READ cpuTemperatureCelsius NOTIFY cpuTemperatureCelsiusChanged)
+    Q_PROPERTY(ProcessorState *cpuState READ cpuState NOTIFY cpuStateChanged)
+    Q_PROPERTY(QQmlListProperty<ProcessorState> possibleCoreStatesByPossibleCoreIndex READ possibleCoreStatesByPossibleCoreIndex NOTIFY possibleCoreStatesByPossibleCoreIndexChanged)
 
 public:
     explicit ProcessorService(QObject *parent = nullptr);
 
-    [[nodiscard]] QString modelName() const;
-    [[nodiscard]] ProcessorState *stateTotal() const;
-    [[nodiscard]] QQmlListProperty<ProcessorState> statesByPossibleCore();
-    [[nodiscard]] qreal temperatureCelsius() const;
+    [[nodiscard]] QString cpuModelName() const;
+    [[nodiscard]] qreal cpuTemperatureCelsius() const;
+    [[nodiscard]] ProcessorState *cpuState() const;
+    [[nodiscard]] QQmlListProperty<ProcessorState> possibleCoreStatesByPossibleCoreIndex();
 
 signals:
-    void modelNameChanged();
-    void stateTotalChanged();
-    void statesByPossibleCoreChanged();
-    void temperatureCelsiusChanged();
+    void cpuModelNameChanged();
+    void cpuTemperatureCelsiusChanged();
+    void cpuStateChanged();
+    void possibleCoreStatesByPossibleCoreIndexChanged();
 
 protected:
     void tick() override;
 
 private:
-    static const QString sm_unknownModelName;
+    static const QString sm_cpuUnknownModelName;
 
-    static qsizetype statesByPossibleCoreCount(QQmlListProperty<ProcessorState> *property);
-    static ProcessorState *statesByPossibleCoreAt(QQmlListProperty<ProcessorState> *property, qsizetype index);
+    static qsizetype possibleCoreStatesByPossibleCoreIndexCount(QQmlListProperty<ProcessorState> *property);
+    static ProcessorState *possibleCoreStatesByPossibleCoreIndexAt(QQmlListProperty<ProcessorState> *property, qsizetype index);
 
-    bool m_isModelNameSourced;
+    bool m_isCPUModelNameSourced;
     bool m_isPossibleCoresSourced;
     qsizetype m_lastPossibleCoreIndex;
 
-    QString m_modelName;
-    QPointer<ProcessorState> m_stateTotal;
-    QHash<qsizetype, QPointer<ProcessorState>> m_statesByPossibleCore;
-    qreal m_temperatureCelsius;
+    QString m_cpuModelName;
+    qreal m_cpuTemperatureCelsius;
+    QPointer<ProcessorState> m_cpuState;
+    QHash<qsizetype, QPointer<ProcessorState>> m_possibleCoreStatesByPossibleCoreIndex;
 
-    void sourceModelName();
+    void sourceCPUModelName();
+    void sourceCPUTemperatureCelsius();
     void sourcePossibleCores();
-    void sourceUsage();
-    void sourceTemperatureCelsius();
+    void sourceProcessorStates();
 };
 
 #endif

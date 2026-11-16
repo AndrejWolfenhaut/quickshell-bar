@@ -1,13 +1,9 @@
 {
-  "terminal.integrated.defaultProfile.linux": "nixDevShell",
-  "terminal.integrated.profiles.linux": {
-    "nixDevShell": {
-      "path": "nix",
-      "args": [
-        "develop"
-      ],
-      "icon": "terminal-bash"
-    }
-  },
-  "qt-qml.qmlls.customExePath": "/nix/store/d9dzphchl6mqq5hkdb828gqgbx8j078n-qmlls-6.12.0/bin/qmlls"
+  "nixEnvSelector.nixFile": "${workspaceFolder}/flake.nix",
+  "nixEnvSelector.useFlakes": true,
+  "nixEnvSelector.flakeShell": "default",
+  "C_Cpp.intelliSenseEngine": "default",
+  "qt-core.showWelcomePageOnActivation": false,
+  "qt-qml.qmlls.enabled": true,
+  "qt-qml.qmlls.customExePath": "/nix/store/yf8q200kx9p4prx0ipid1kyyvgjjkksn-qmlls-with-import-paths-6.12.0/bin/qmlls"
 }

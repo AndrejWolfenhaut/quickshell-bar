@@ -48,19 +48,19 @@
 
       pkgs = nixpkgs.legacyPackages.${system};
 
-      quickshell-with-modules =
+      qtModules = with pkgs.qt6; [ ];
+      quickshell-with-qt-modules =
         (quickshell.packages.${system}.default.override {
           withX11 = false;
           withI3 = false;
-        }).withModules
-          (with pkgs.qt6; [ qtimageformats ]);
+        }).withModules qtModules;
     in
     {
       packages.${system} = rec {
         quickshell-bar = pkgs.callPackage ./nix {
           stdenv = pkgs.clangStdenv;
 
-          inherit quickshell-with-modules;
+          inherit qtModules quickshell-with-qt-modules;
         };
         default = quickshell-bar;
       };
@@ -85,49 +85,56 @@
           program = "${self.packages.${system}.quickshell-bar}/bin/quickshell-bar";
         };
 
-        update-vscode-settings =
-          let
-            qmlls-with-import-paths = pkgs.callPackage (
-              {
-                stdenv,
-                makeWrapper,
-                kdePackages,
-              }:
-              stdenv.mkDerivation {
-                pname = "qmlls-with-import-paths";
-                inherit (kdePackages.qtdeclarative) version;
 
-                buildInputs = [ kdePackages.qtdeclarative ];
-                nativeBuildInputs = [ makeWrapper ];
+        # Non-Nix-aware VSCode settings are located as a template at /nix/vsCodeSettingsTemplate.
+        # The are used as a template for generating Nix-aware VSCode settings under /.vscode, e.g. the compiler path is inserted.
+        # To generate the Nix-aware VSCode settings, run the generate-vscode-settings app from the flake.
+        # (nix run .#generate-vscode-settings)
+        generate-vscode-settings =
+        let
+          qmlls-with-import-paths = pkgs.callPackage (
+            {
+              stdenv,
+              makeWrapper,
+              kdePackages,
+            }:
+            stdenv.mkDerivation {
+              pname = "qmlls-with-import-paths";
+              inherit (kdePackages.qtdeclarative) version;
 
-                dontUnpack = true;
-                dontWrapQtApps = true;
+              buildInputs = [ kdePackages.qtdeclarative ];
+              nativeBuildInputs = [ makeWrapper ];
 
-                installPhase = ''
-                  mkdir -p "$out/bin"
-                  makeWrapper ${kdePackages.qtdeclarative}/bin/qmlls "$out/bin/qmlls" \
-                    --add-flags "-I ${kdePackages.qtdeclarative}/lib/qt-6/qml" \
-                    --add-flags "-I ${quickshell-with-modules}/lib/qt-6/qml"
-                '';
-              }
-            ) { };
+              dontUnpack = true;
+              dontWrapQtApps = true;
 
-            update-vscode-settings-script = pkgs.writeShellApplication {
-              runtimeInputs = [
-                pkgs.jq
-                pkgs.mktemp
-              ];
-              name = "update-vscode-settings";
-              text = ''
-                tmp="$(mktemp)"
-                jq '."qt-qml.qmlls.customExePath" = "${qmlls-with-import-paths}/bin/qmlls"' ./.vscode/settings.json > "$tmp" && mv "$tmp" ./.vscode/settings.json
+              installPhase = ''
+                mkdir -p "$out/bin"
+                makeWrapper ${kdePackages.qtdeclarative}/bin/qmlls "$out/bin/qmlls" \
+                  --add-flags "-I ${kdePackages.qtdeclarative}/lib/qt-6/qml" \
+                  --add-flags "-I ${quickshell-with-qt-modules}/lib/qt-6/qml"
               '';
-            };
-          in
-          {
-            type = "app";
-            program = "${update-vscode-settings-script}/bin/update-vscode-settings";
-          };
+            }
+          ) { };
+
+          generationScript = ''
+            changeFile "settings.json"
+            assign '."qt-qml.qmlls.customExePath"' '"${qmlls-with-import-paths}/bin/qmlls"'
+          
+            changeFile "c_cpp_properties.json"
+            assign '.configurations[.configurations|length - 1].compilerPath' '"${pkgs.clang}/bin/clang++"'
+            for includeSubpath in ${pkgs.qt6.qtbase}/include/*; do
+              append '.configurations[.configurations|length - 1].includePath' '"'"$includeSubpath"'"'
+            done
+            for includeSubpath in ${pkgs.qt6.qtdeclarative}/include/*; do
+              append '.configurations[.configurations|length - 1].includePath' '"'"$includeSubpath"'"'
+            done
+          '';
+        in
+        {
+          type = "app";
+          program = "${pkgs.callPackage ./nix/generateVSCodeSettings.nix { inherit generationScript; }}/bin/generate-vscode-settings";
+        };
 
         default = quickshell-bar;
       };

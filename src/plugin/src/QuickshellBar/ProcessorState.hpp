@@ -70,7 +70,7 @@ public:
     [[nodiscard]] qreal usedPercent() const;
 
     void updateOffline();
-    void updateOnline(const ProcessorTimes &times);
+    void updateOnline(const ProcessorTimes &processorTimes);
 
 signals:
     void availabilityChanged();

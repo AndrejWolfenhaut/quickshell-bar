@@ -1,2 +1,8 @@
 /build
 /result
+
+# Non-Nix-aware VSCode settings are located as a template at /nix/vsCodeSettingsTemplate.
+# The are used as a template for generating Nix-aware VSCode settings under /.vscode, e.g. the compiler path is inserted.
+# To generate the Nix-aware VSCode settings, run the generate-vscode-settings app from the flake.
+# (nix run .#generate-vscode-settings)
+/.vscode

@@ -33,7 +33,8 @@
   cmake,
   ninja,
   qt6,
-  quickshell-with-modules,
+  qtModules,
+  quickshell-with-qt-modules,
   debug ? false,
   extraRuntimeDependencies ? [ ],
   ...
@@ -58,14 +59,8 @@ let
       );
     };
 
-    nativeBuildInputs = [
-      cmake
-      ninja
-    ];
-    buildInputs = [
-      qt6.qtbase
-      qt6.qtdeclarative
-    ];
+    nativeBuildInputs = [ cmake ninja ];
+    buildInputs = [ qt6.qtbase qt6.qtdeclarative ] ++ qtModules;
 
     dontWrapQtApps = true;
 
@@ -76,7 +71,7 @@ let
     ];
   };
 
-  runtimeDependencies = [ bash ] ++ extraRuntimeDependencies;
+  runtimeDependencies = [ ] ++ extraRuntimeDependencies;
 in
 stdenv.mkDerivation {
   pname = "quickshell-bar${lib.optionalString debug "-debug"}";
@@ -100,10 +95,12 @@ stdenv.mkDerivation {
     qt6.wrapQtAppsHook
   ];
   buildInputs = [
-    quickshell-with-modules
+    quickshell-with-qt-modules
     quickshell-bar-plugin
     qt6.qtbase
-  ];
+  ]
+  ++
+  qtModules;
   propagatedBuildInputs = runtimeDependencies;
 
   inherit cmakeBuildType;
@@ -116,9 +113,7 @@ stdenv.mkDerivation {
 
   postInstall = ''
     mkdir -p "$out/bin"
-    makeWrapper "${quickshell-with-modules}/bin/qs" "$out/bin/quickshell-bar" \
-      --prefix PATH : "${lib.makeBinPath runtimeDependencies}" \
-      --add-flags "--path $out/share/quickshell-bar"
+    makeWrapper "${quickshell-with-qt-modules}/bin/qs" "$out/bin/quickshell-bar" ${lib.optionalString (runtimeDependencies != [ ]) "--prefix PATH : \"${lib.makeBinPath runtimeDependencies}\""} --add-flags "--path $out/share/quickshell-bar"
   '';
 
   passthru = {

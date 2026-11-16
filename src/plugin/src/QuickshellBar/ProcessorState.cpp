@@ -76,18 +76,18 @@ qreal ProcessorState::usedPercent() const {
     return m_usedPercent;
 }
 
-void ProcessorState::updateOnline(const ProcessorTimes &times) {
+void ProcessorState::updateOnline(const ProcessorTimes &processorTimes) {
     if (m_availability != ProcessorState::ProcessorAvailability::Online) {
         m_availability = ProcessorState::ProcessorAvailability::Online;
         emit availabilityChanged();
     }
 
-    const quint64 idleTimeDelta = times.m_idleTime > m_prevIdleTime ? times.m_idleTime - m_prevIdleTime : 0ull;
-    const quint64 totalTimeDelta = times.m_totalTime > m_prevTotalTime ? times.m_totalTime - m_prevTotalTime : 0ull;
+    const quint64 idleTimeDelta = processorTimes.m_idleTime > m_prevIdleTime ? processorTimes.m_idleTime - m_prevIdleTime : 0ull;
+    const quint64 totalTimeDelta = processorTimes.m_totalTime > m_prevTotalTime ? processorTimes.m_totalTime - m_prevTotalTime : 0ull;
     const qreal usedPercent = totalTimeDelta > 0ull ? (1.0 - static_cast<qreal>(idleTimeDelta) / static_cast<qreal>(totalTimeDelta)) * 100.0 : 0.0;
 
-    m_prevIdleTime = times.m_idleTime;
-    m_prevTotalTime = times.m_totalTime;
+    m_prevIdleTime = processorTimes.m_idleTime;
+    m_prevTotalTime = processorTimes.m_totalTime;
 
     if (std::abs(usedPercent - m_usedPercent) > 0.0001) {
         m_usedPercent = usedPercent;

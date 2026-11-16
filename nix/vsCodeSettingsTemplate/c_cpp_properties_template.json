@@ -1,0 +1,14 @@
+{
+  "configurations": [
+    {
+      "name": "quickshell-bar",
+      "includePath": [
+        "${workspaceFolder}/src/plugin/**"
+      ],
+      "intelliSenseMode": "linux-clang-x64",
+      "cppStandard": "c++20"
+    }
+  ],
+  "version": 4,
+  "enableConfigurationSquiggles": true
+}
