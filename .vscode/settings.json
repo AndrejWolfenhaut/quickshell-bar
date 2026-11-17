@@ -1,9 +1,0 @@
-{
-  "nixEnvSelector.nixFile": "${workspaceFolder}/flake.nix",
-  "nixEnvSelector.useFlakes": true,
-  "nixEnvSelector.flakeShell": "default",
-  "C_Cpp.intelliSenseEngine": "default",
-  "qt-core.showWelcomePageOnActivation": false,
-  "qt-qml.qmlls.enabled": true,
-  "qt-qml.qmlls.customExePath": "/nix/store/yf8q200kx9p4prx0ipid1kyyvgjjkksn-qmlls-with-import-paths-6.12.0/bin/qmlls"
-}
