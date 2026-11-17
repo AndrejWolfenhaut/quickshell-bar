@@ -35,8 +35,9 @@
   qt6,
   qtModules,
   quickshell-with-qt-modules,
-  debug ? false,
+  lm_sensors,
   extraRuntimeDependencies ? [ ],
+  debug ? false,
   ...
 }:
 let
@@ -60,7 +61,7 @@ let
     };
 
     nativeBuildInputs = [ cmake ninja ];
-    buildInputs = [ qt6.qtbase qt6.qtdeclarative ] ++ qtModules;
+    buildInputs = [ qt6.qtbase qt6.qtdeclarative lm_sensors ] ++ qtModules;
 
     dontWrapQtApps = true;
 

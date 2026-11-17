@@ -129,6 +129,7 @@
             for includeSubpath in ${pkgs.qt6.qtdeclarative}/include/*; do
               append '.configurations[.configurations|length - 1].includePath' '"'"$includeSubpath"'"'
             done
+            append '.configurations[.configurations|length - 1].includePath' '"${pkgs.lm_sensors.dev}/include"'
           '';
         in
         {

@@ -48,7 +48,7 @@ class ProcessorService : public TickingService {
     QML_SINGLETON
 
     Q_PROPERTY(QString cpuModelName READ cpuModelName NOTIFY cpuModelNameChanged)
-    Q_PROPERTY(qreal cpuTemperatureCelsius READ cpuTemperatureCelsius NOTIFY cpuTemperatureCelsiusChanged)
+    Q_PROPERTY(qreal cpuTemperature READ cpuTemperature NOTIFY cpuTemperatureChanged)
     Q_PROPERTY(ProcessorState *cpuState READ cpuState NOTIFY cpuStateChanged)
     Q_PROPERTY(QQmlListProperty<ProcessorState> possibleCoreStatesByPossibleCoreIndex READ possibleCoreStatesByPossibleCoreIndex NOTIFY possibleCoreStatesByPossibleCoreIndexChanged)
 
@@ -56,13 +56,13 @@ public:
     explicit ProcessorService(QObject *parent = nullptr);
 
     [[nodiscard]] QString cpuModelName() const;
-    [[nodiscard]] qreal cpuTemperatureCelsius() const;
+    [[nodiscard]] qreal cpuTemperature() const;
     [[nodiscard]] ProcessorState *cpuState() const;
     [[nodiscard]] QQmlListProperty<ProcessorState> possibleCoreStatesByPossibleCoreIndex();
 
 signals:
     void cpuModelNameChanged();
-    void cpuTemperatureCelsiusChanged();
+    void cpuTemperatureChanged();
     void cpuStateChanged();
     void possibleCoreStatesByPossibleCoreIndexChanged();
 
@@ -80,12 +80,12 @@ private:
     qsizetype m_lastPossibleCoreIndex;
 
     QString m_cpuModelName;
-    qreal m_cpuTemperatureCelsius;
+    qreal m_cpuTemperature;
     QPointer<ProcessorState> m_cpuState;
     QHash<qsizetype, QPointer<ProcessorState>> m_possibleCoreStatesByPossibleCoreIndex;
 
     void sourceCPUModelName();
-    void sourceCPUTemperatureCelsius();
+    void sourceCPUTemperature();
     void sourcePossibleCores();
     void sourceProcessorStates();
 };

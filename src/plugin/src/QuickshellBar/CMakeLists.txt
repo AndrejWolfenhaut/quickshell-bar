@@ -31,4 +31,5 @@ qml_module(quickshell-bar-core
         TickingService.cpp
         ProcessorService.cpp
         ProcessorState.cpp
+        Sensors.cpp
 )

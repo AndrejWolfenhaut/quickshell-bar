@@ -41,7 +41,7 @@ m_totalTime(0ull) {}
 
 
 
-ProcessorState::ProcessorState(const QString &name, QObject *parent) : QObject(parent),
+ProcessorState::ProcessorState(QString name, QObject *parent) : QObject(parent),
 m_prevIdleTime(0ull),
 m_prevTotalTime(0ull),
 m_name(name),

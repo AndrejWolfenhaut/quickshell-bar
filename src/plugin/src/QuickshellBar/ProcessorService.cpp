@@ -31,6 +31,7 @@
 #include <QFile>
 #include <QRegularExpression>
 
+#include "Sensors.hpp"
 #include "ProcessorService.hpp"
 
 
@@ -46,7 +47,7 @@ m_isCPUModelNameSourced(false),
 m_isPossibleCoresSourced(false),
 m_lastPossibleCoreIndex(0),
 m_cpuModelName(sm_cpuUnknownModelName),
-m_cpuTemperatureCelsius(0.0),
+m_cpuTemperature(0.0),
 m_cpuState(new ProcessorState(u"CPU"_s, this)) {
     sourceCPUModelName();
     sourcePossibleCores();
@@ -86,8 +87,8 @@ ProcessorState *ProcessorService::possibleCoreStatesByPossibleCoreIndexAt(QQmlLi
         : nullptr;
 }
 
-qreal ProcessorService::cpuTemperatureCelsius() const {
-    return m_cpuTemperatureCelsius;
+qreal ProcessorService::cpuTemperature() const {
+    return m_cpuTemperature;
 }
 
 void ProcessorService::tick() {
@@ -100,7 +101,7 @@ void ProcessorService::tick() {
     }
 
     sourceProcessorStates();
-    sourceCPUTemperatureCelsius();
+    sourceCPUTemperature();
 }
 
 void ProcessorService::sourceCPUModelName() {
@@ -273,6 +274,16 @@ void ProcessorService::sourceProcessorStates() {
     }
 }
 
-void ProcessorService::sourceCPUTemperatureCelsius() {
+void ProcessorService::sourceCPUTemperature() {
+    const std::optional<qreal> cpuTemperature = Sensors::sourceCPUTemperature();
+    const qreal newCPUTemperature = cpuTemperature.value_or(0.0);
 
+    if (!cpuTemperature.has_value()) {
+        std::cerr << "[ProcessorService] Could not source CPU temperature!" << std::endl;
+    }
+
+    if (std::abs(newCPUTemperature - m_cpuTemperature) < 0.05) {
+        m_cpuTemperature = newCPUTemperature;
+        emit cpuTemperatureChanged();
+    }
 }
