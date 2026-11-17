@@ -63,7 +63,7 @@ class ProcessorState : public QObject {
     Q_PROPERTY(qreal usedPercent READ usedPercent NOTIFY usedPercentChanged)
 
 public:
-    explicit ProcessorState(QString name, QObject *parent = nullptr);
+    explicit ProcessorState(const QString name, QObject *parent = nullptr);
 
     [[nodiscard]] QString name() const;
     [[nodiscard]] QString availability() const;
